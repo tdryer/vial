@@ -1,5 +1,5 @@
 use {
-    crate::{asset, Method, Request, Response},
+    crate::{asset,HTTPRequest, Method, Request, Response},
     percent_encoding::percent_decode,
     std::{
         collections::HashMap,
@@ -8,29 +8,28 @@ use {
 };
 
 #[derive(Default)]
-pub struct Router {
-    routes: HashMap<Method, Vec<(Vec<String>, fn(Request) -> Response)>>,
+pub struct Router<R: HTTPRequest> {
+    routes: HashMap<Method, Vec<(Vec<String>, fn(R) -> Response)>>,
 }
 
-impl Router {
-    pub fn new() -> Router {
+impl<R: HTTPRequest> Router<R> {
+    pub fn new() -> Router<R> {
         Router {
             routes: HashMap::new(),
         }
     }
 
-    pub fn action_for(&self, req: &mut Request) -> Option<&fn(Request) -> Response> {
+    pub fn action_for(&self, req: &mut R) -> Option<&fn(R) -> Response> {
         if let Some(routes) = self.routes.get(&req.method().into()) {
             let req_parts = Self::pattern_to_vec(req.path());
 
             'outer: for (pattern, action) in routes {
-                req.args.clear();
                 for (i, req_part) in req_parts.iter().enumerate() {
                     if i >= pattern.len() {
                         continue 'outer;
                     }
                     if pattern[i].starts_with(':') && !req_part.is_empty() {
-                        req.args.insert(
+                        req.set_arg(
                             pattern[i].trim_start_matches(':').to_string(),
                             percent_decode(req_part.as_bytes())
                                 .decode_utf8_lossy()
@@ -38,7 +37,7 @@ impl Router {
                         );
                         continue;
                     } else if pattern[i].starts_with('*') && !req_part.is_empty() {
-                        req.args.insert(
+                        req.set_arg(
                             pattern[i].trim_start_matches('*').to_string(),
                             percent_decode(req_parts[i..].join("/").as_bytes())
                                 .decode_utf8_lossy()
@@ -70,7 +69,7 @@ impl Router {
         &mut self,
         method: T,
         pattern: &'static str,
-        action: fn(Request) -> Response,
+        action: fn(R) -> Response,
     ) {
         let method = method.into();
         let pattern_parts = Self::pattern_to_vec(pattern);
@@ -113,7 +112,7 @@ mod tests {
             "Info".into()
         }
 
-        let mut router = Router::new();
+        let mut router = Router::<Request>::new();
         router.insert("GET", "/about", about);
         router.insert("GET", "/:page", show);
         router.insert("GET", "/info", info);

@@ -1,10 +1,12 @@
-use crate::{util, Result};
-use std::{
-    collections::HashMap,
-    io::{self, Read},
-    mem,
-    net::TcpStream,
-    str,
+use {
+    crate::{util, HTTPRequest, Result},
+    std::{
+        collections::HashMap,
+        io::{self, Read},
+        mem,
+        net::TcpStream,
+        str,
+    },
 };
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -42,21 +44,60 @@ pub struct Request {
     pub(crate) args: HashMap<String, String>,
 }
 
-impl Request {
-    pub fn default() -> Request {
-        Request {
-            path: Span(0, 0),
-            full_path: Span(0, 0),
-            method: Span(0, 0),
-            body: Span(0, 0),
-            headers: Vec::new(),
-            args: HashMap::new(),
-            form: HashMap::new(),
-            buffer: Vec::new(),
-        }
+impl HTTPRequest for Request {
+    fn body(&self) -> &str {
+        self.body.from_buf(&self.buffer)
     }
 
-    pub fn from_reader(mut reader: TcpStream) -> Result<Request> {
+    fn method(&self) -> &str {
+        self.method.from_buf(&self.buffer)
+    }
+
+    fn path(&self) -> &str {
+        self.path.from_buf(&self.buffer)
+    }
+
+    fn arg(&self, name: &str) -> Option<&str> {
+        self.args.get(name).and_then(|v| Some(v.as_ref()))
+    }
+
+    fn set_arg(&mut self, key: String, value: String) {
+        self.args.insert(key, value);
+    }
+
+    fn full_path(&self) -> &str {
+        self.full_path.from_buf(&self.buffer)
+    }
+
+    fn header(&self, name: &str) -> Option<&str> {
+        let name = name.to_lowercase();
+        self.headers
+            .iter()
+            .find(|(n, _)| self.span_as_str(*n).to_ascii_lowercase() == name)
+            .and_then(|(_, v)| Some(self.span_as_str(*v).trim()))
+    }
+
+    /// Return a value from the POSTed form data.
+    fn form(&self, name: &str) -> Option<&str> {
+        self.form.get(name).and_then(|s| Some(s.as_ref()))
+    }
+
+    /// Return a value from the ?querystring=
+    fn query(&self, name: &str) -> Option<&str> {
+        let idx = self.full_path().find('?')?;
+        self.full_path()[idx + 1..]
+            .split("&")
+            .filter_map(|s| {
+                if s.starts_with(name) && *&s[name.len()..].chars().next() == Some('=') {
+                    Some(&s[name.len() + 1..])
+                } else {
+                    None
+                }
+            })
+            .next()
+    }
+
+    fn from_reader(mut reader: TcpStream) -> Result<Request> {
         let mut buffer = Vec::with_capacity(512);
         let mut read_buf = [0u8; 512];
 
@@ -90,6 +131,21 @@ impl Request {
 
         Ok(req)
     }
+}
+
+impl Request {
+    pub fn default() -> Request {
+        Request {
+            path: Span(0, 0),
+            full_path: Span(0, 0),
+            method: Span(0, 0),
+            body: Span(0, 0),
+            headers: Vec::new(),
+            args: HashMap::new(),
+            form: HashMap::new(),
+            buffer: Vec::new(),
+        }
+    }
 
     pub fn from_path(path: &str) -> Request {
         Request::default().with_path(path)
@@ -113,50 +169,12 @@ impl Request {
         self
     }
 
-    pub fn body(&self) -> &str {
-        self.body.from_buf(&self.buffer)
-    }
-
-    pub fn method(&self) -> &str {
-        self.method.from_buf(&self.buffer)
-    }
-
-    pub fn path(&self) -> &str {
-        self.path.from_buf(&self.buffer)
-    }
-
-    pub fn full_path(&self) -> &str {
-        self.full_path.from_buf(&self.buffer)
-    }
-
-    pub fn arg(&self, name: &str) -> Option<&str> {
-        self.args.get(name).and_then(|v| Some(v.as_ref()))
-    }
-
     fn span_as_str(&self, span: Span) -> &str {
         if span.1 < self.buffer.len() && span.1 >= span.0 {
             str::from_utf8(&self.buffer[span.0..span.1]).unwrap_or("?")
         } else {
             ""
         }
-    }
-
-    pub fn header(&self, name: &str) -> Option<&str> {
-        let name = name.to_lowercase();
-        self.headers
-            .iter()
-            .find(|(n, _)| self.span_as_str(*n).to_ascii_lowercase() == name)
-            .and_then(|(_, v)| Some(self.span_as_str(*v).trim()))
-    }
-
-    /// Was the given form value sent?
-    pub fn has_form(&mut self, name: &str) -> bool {
-        self.form(name).is_some()
-    }
-
-    /// Return a value from the POSTed form data.
-    pub fn form(&self, name: &str) -> Option<&str> {
-        self.form.get(name).and_then(|s| Some(s.as_ref()))
     }
 
     /// Parse and decode form POST data into a Hash.
@@ -173,26 +191,6 @@ impl Request {
             }
         }
         self.form = map;
-    }
-
-    /// Was the given query value sent?
-    pub fn has_query(&mut self, name: &str) -> bool {
-        self.query(name).is_some()
-    }
-
-    /// Return a value from the ?querystring=
-    pub fn query(&self, name: &str) -> Option<&str> {
-        let idx = self.full_path().find('?')?;
-        self.full_path()[idx + 1..]
-            .split("&")
-            .filter_map(|s| {
-                if s.starts_with(name) && *&s[name.len()..].chars().next() == Some('=') {
-                    Some(&s[name.len() + 1..])
-                } else {
-                    None
-                }
-            })
-            .next()
     }
 }
 

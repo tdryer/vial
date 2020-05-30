@@ -5,6 +5,7 @@ mod macros;
 pub mod asset;
 mod bundler;
 pub mod features;
+mod http_request;
 mod method;
 pub mod prelude;
 mod request;
@@ -12,6 +13,7 @@ mod responder;
 mod response;
 mod router;
 mod server;
+mod state;
 mod util;
 
 #[cfg(features = "horror")]
@@ -22,8 +24,8 @@ extern crate horrorshow;
 pub use features::horrorshow::{box_html, html, owned_html};
 
 pub use {
-    bundler::bundle_assets, method::Method, request::Request, responder::Responder,
-    response::Response, router::Router, server::run,
+    bundler::bundle_assets, http_request::HTTPRequest, method::Method, request::Request,
+    responder::Responder, response::Response, router::Router, server::run, state::State,
 };
 pub type Result<T> = std::result::Result<T, std::io::Error>;
 

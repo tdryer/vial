@@ -1,5 +1,5 @@
 use {
-    crate::{asset, Request, Response, Result, Router},
+    crate::{asset, HTTPRequest, Request, Response, Result, Router},
     std::{
         io::{self, prelude::*, BufReader, Read, Write},
         net::{SocketAddr, TcpListener, TcpStream, ToSocketAddrs},
@@ -10,7 +10,7 @@ use {
 
 const MAX_CONNECTIONS: usize = 10;
 
-pub fn run<T: ToSocketAddrs>(addr: T, router: Router) -> Result<()> {
+pub fn run<T: ToSocketAddrs, R: 'static + HTTPRequest>(addr: T, router: Router<R>) -> Result<()> {
     let pool = ThreadPool::new(MAX_CONNECTIONS);
     let listener = TcpListener::bind(&addr)?;
     let addr = listener.local_addr()?;
@@ -30,22 +30,22 @@ pub fn run<T: ToSocketAddrs>(addr: T, router: Router) -> Result<()> {
     Ok(())
 }
 
-pub struct Server {
-    router: Router,
+pub struct Server<R: HTTPRequest> {
+    router: Router<R>,
 }
 
-impl Server {
-    pub fn new(router: Router) -> Server {
+impl<R: HTTPRequest> Server<R> {
+    pub fn new(router: Router<R>) -> Server<R> {
         Server { router }
     }
 
     fn handle_request(&self, mut stream: TcpStream) -> Result<()> {
         let reader = stream.try_clone()?;
-        let req = Request::from_reader(reader)?;
+        let req = R::from_reader(reader)?;
         self.write_response(stream, req)
     }
 
-    fn write_response(&self, mut stream: TcpStream, mut req: Request) -> Result<()> {
+    fn write_response(&self, mut stream: TcpStream, mut req: R) -> Result<()> {
         let method = req.method().to_string();
         let path = req.path().to_string();
         let mut response = self.build_response(req);
@@ -58,7 +58,7 @@ impl Server {
         response.write(stream)
     }
 
-    fn build_response(&self, mut req: Request) -> Response {
+    fn build_response(&self, mut req: R) -> Response {
         if asset::exists(req.path()) {
             if let Some(req_etag) = req.header("If-None-Match") {
                 if req_etag == asset::etag(req.path()).as_ref() {
