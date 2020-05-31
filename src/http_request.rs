@@ -3,7 +3,9 @@ use {
     std::net::TcpStream,
 };
 
-pub trait HttpRequest: Send {
+pub trait HttpRequest: Send + Sized {
+    type State;
+
     fn method(&self) -> &str;
     fn path(&self) -> &str;
     fn full_path(&self) -> &str;
@@ -13,4 +15,5 @@ pub trait HttpRequest: Send {
     fn header(&self, name: &str) -> Option<&str>;
     fn form(&self, name: &str) -> Option<&str>;
     fn query(&self, name: &str) -> Option<&str>;
+    fn wrap(state: Self::State, request: Request) -> Self;
 }

@@ -45,6 +45,8 @@ pub struct Request {
 }
 
 impl HttpRequest for Request {
+    type State = ();
+
     fn body(&self) -> &str {
         self.body.from_buf(&self.buffer)
     }
@@ -95,6 +97,10 @@ impl HttpRequest for Request {
                 }
             })
             .next()
+    }
+
+    fn wrap(state: Self::State, request: Request) -> Request {
+        request
     }
 }
 

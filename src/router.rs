@@ -19,7 +19,7 @@ impl<R: HttpRequest> Router<R> {
         }
     }
 
-    pub fn action_for(&self, req: &mut Box<dyn HttpRequest>) -> Option<&fn(R) -> Response> {
+    pub fn action_for(&self, req: &mut R) -> Option<&fn(R) -> Response> {
         if let Some(routes) = self.routes.get(&req.method().into()) {
             let req_parts = Self::pattern_to_vec(req.path());
 

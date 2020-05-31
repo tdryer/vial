@@ -13,7 +13,7 @@ macro_rules! run {
         vial::setup!();
         let mut router = ::vial::Router::new();
         $($module::vial_add_to_router(&mut router);)+
-        vial::run::<::vial::Request>($addr, router)
+        vial::run($addr, router)
     }};
 }
 
@@ -94,10 +94,13 @@ macro_rules! routes {
             $($method();)*
         }
 
-        pub fn vial_add_to_router(router: &mut ::vial::Router) {
+        pub fn vial_add_to_router<
+            R: ::vial::HttpRequest<State = S>,
+            S: Send + Sync + Sized
+        >(router: &mut ::vial::Router<R>) {
             $( router.insert(::vial::Method::$method, $path, |req| {
                 use ::vial::Responder;
-                let b: fn(::vial::Request) -> _ = $body;
+                let b = $body;
                 b(req).to_response()
             }); )*
         }

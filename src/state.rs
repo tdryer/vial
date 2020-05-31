@@ -4,27 +4,26 @@ use {
 };
 
 pub struct State<T: Send + Sync> {
-    inner: Arc<T>,
+    inner: T,
     request: Request,
 }
 
 impl<T: Send + Sync> State<T> {
     pub fn new(inner: T, request: Request) -> State<T> {
-        State {
-            inner: Arc::new(inner),
-            request,
-        }
+        State { inner, request }
     }
 }
 
 impl<T: Send + Sync> std::ops::Deref for State<T> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
-        &self.inner.deref()
+        &self.inner
     }
 }
 
 impl<T: Send + Sync> HttpRequest for State<T> {
+    type State = T;
+
     fn method(&self) -> &str {
         self.request.method()
     }
@@ -51,5 +50,11 @@ impl<T: Send + Sync> HttpRequest for State<T> {
     }
     fn set_arg(&mut self, key: String, value: String) {
         self.request.set_arg(key, value)
+    }
+    fn wrap(state: T, request: Request) -> State<T> {
+        State {
+            inner: state,
+            request,
+        }
     }
 }
