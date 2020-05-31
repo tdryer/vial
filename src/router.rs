@@ -1,5 +1,5 @@
 use {
-    crate::{asset,HTTPRequest, Method, Request, Response},
+    crate::{asset, HTTPRequest, Method, Request, Response},
     percent_encoding::percent_decode,
     std::{
         collections::HashMap,
@@ -19,7 +19,7 @@ impl<R: HTTPRequest> Router<R> {
         }
     }
 
-    pub fn action_for(&self, req: &mut R) -> Option<&fn(R) -> Response> {
+    pub fn action_for(&self, req: &mut Box<dyn HTTPRequest>) -> Option<&fn(R) -> Response> {
         if let Some(routes) = self.routes.get(&req.method().into()) {
             let req_parts = Self::pattern_to_vec(req.path());
 

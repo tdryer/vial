@@ -10,20 +10,44 @@ macro_rules! run {
         vial::run!("0.0.0.0:7667", $($module),+)
     }};
     ($addr:expr, $($module:ident),+) => {{
+        vial::setup!();
         let mut router = ::vial::Router::new();
         $($module::vial_add_to_router(&mut router);)+
+        vial::run::<::vial::Request>($addr, router)
+    }};
+}
 
+#[macro_export]
+macro_rules! run_with_state {
+    ($state:expr) => {
+        vial::run_with_state!($state, "0.0.0.0:7667")
+    };
+    ($state:expr, $addr:expr) => {{
+        vial::run_with_state!($state, $addr, self)
+    }};
+    ($state:expr, $($module:ident),+) => {{
+        vial::run_with_state!($state, "0.0.0.0:7667", $($module),+)
+    }};
+    ($state:expr, $addr:expr, $($module:ident),+) => {{
+        vial::setup!();
+        let mut router = ::vial::Router::new();
+        $($module::vial_add_to_router(&mut router);)+
+        vial::run_with_state($addr, router, state)
+    }};
+}
+
+#[macro_export]
+macro_rules! setup {
+    () => {
         #[cfg(bundle_assets)]
         #[macro_export]
         macro_rules! vial_bundled_assets {
             () => { include!(concat!(env!("OUT_DIR"), "/bundle.rs")) };
         }
-
         #[cfg(bundle_assets)]
         vial::include_assets!();
         vial::asset_dir!(@option option_env!("ASSET_DIR"));
-        vial::run($addr, router)
-    }};
+    };
 }
 
 #[macro_export]

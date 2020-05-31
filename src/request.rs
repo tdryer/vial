@@ -96,8 +96,29 @@ impl HTTPRequest for Request {
             })
             .next()
     }
+}
 
-    fn from_reader(mut reader: TcpStream) -> Result<Request> {
+impl Default for Request {
+    fn default() -> Request {
+        Request {
+            path: Span(0, 0),
+            full_path: Span(0, 0),
+            method: Span(0, 0),
+            body: Span(0, 0),
+            headers: Vec::new(),
+            args: HashMap::new(),
+            form: HashMap::new(),
+            buffer: Vec::new(),
+        }
+    }
+}
+
+impl Request {
+    pub fn from_path(path: &str) -> Request {
+        Request::default().with_path(path)
+    }
+
+    pub fn from_reader(mut reader: TcpStream) -> Result<Request> {
         let mut buffer = Vec::with_capacity(512);
         let mut read_buf = [0u8; 512];
 
@@ -130,25 +151,6 @@ impl HTTPRequest for Request {
         }
 
         Ok(req)
-    }
-}
-
-impl Request {
-    pub fn default() -> Request {
-        Request {
-            path: Span(0, 0),
-            full_path: Span(0, 0),
-            method: Span(0, 0),
-            body: Span(0, 0),
-            headers: Vec::new(),
-            args: HashMap::new(),
-            form: HashMap::new(),
-            buffer: Vec::new(),
-        }
-    }
-
-    pub fn from_path(path: &str) -> Request {
-        Request::default().with_path(path)
     }
 
     pub fn with_path(mut self, path: &str) -> Request {

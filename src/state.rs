@@ -1,21 +1,30 @@
 use {
     crate::{HTTPRequest, Request, Result},
-    std::net::TcpStream,
+    std::{net::TcpStream, sync::Arc},
 };
 
-pub struct State<T> {
-    inner: T,
+pub struct State<T: Send + Sync> {
+    inner: Arc<T>,
     request: Request,
 }
 
-impl<T> std::ops::Deref for State<T> {
-    type Target = T;
-    fn deref(&self) -> &Self::Target {
-        &self.inner
+impl<T: Send + Sync> State<T> {
+    pub fn new(inner: T, request: Request) -> State<T> {
+        State {
+            inner: Arc::new(inner),
+            request,
+        }
     }
 }
 
-impl<T> HTTPRequest for State<T> {
+impl<T: Send + Sync> std::ops::Deref for State<T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        &self.inner.deref()
+    }
+}
+
+impl<T: Send + Sync> HTTPRequest for State<T> {
     fn method(&self) -> &str {
         self.request.method()
     }
@@ -42,10 +51,5 @@ impl<T> HTTPRequest for State<T> {
     }
     fn set_arg(&mut self, key: String, value: String) {
         self.request.set_arg(key, value)
-    }
-    fn from_reader(reader: TcpStream) -> Result<Self> {
-        State {
-            inner: T::new(),
-            Self::from_reader(reader)
     }
 }
