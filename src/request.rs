@@ -1,5 +1,5 @@
 use {
-    crate::{util, HTTPRequest, Result},
+    crate::{util, HttpRequest, Result},
     std::{
         collections::HashMap,
         io::{self, Read},
@@ -44,7 +44,7 @@ pub struct Request {
     pub(crate) args: HashMap<String, String>,
 }
 
-impl HTTPRequest for Request {
+impl HttpRequest for Request {
     fn body(&self) -> &str {
         self.body.from_buf(&self.buffer)
     }

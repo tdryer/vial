@@ -1,5 +1,5 @@
 use {
-    crate::{asset, HTTPRequest, Method, Request, Response},
+    crate::{asset, HttpRequest, Method, Request, Response},
     percent_encoding::percent_decode,
     std::{
         collections::HashMap,
@@ -8,18 +8,18 @@ use {
 };
 
 #[derive(Default)]
-pub struct Router<R: HTTPRequest> {
+pub struct Router<R: HttpRequest> {
     routes: HashMap<Method, Vec<(Vec<String>, fn(R) -> Response)>>,
 }
 
-impl<R: HTTPRequest> Router<R> {
+impl<R: HttpRequest> Router<R> {
     pub fn new() -> Router<R> {
         Router {
             routes: HashMap::new(),
         }
     }
 
-    pub fn action_for(&self, req: &mut Box<dyn HTTPRequest>) -> Option<&fn(R) -> Response> {
+    pub fn action_for(&self, req: &mut Box<dyn HttpRequest>) -> Option<&fn(R) -> Response> {
         if let Some(routes) = self.routes.get(&req.method().into()) {
             let req_parts = Self::pattern_to_vec(req.path());
 

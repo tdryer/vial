@@ -24,7 +24,7 @@ extern crate horrorshow;
 pub use features::horrorshow::{box_html, html, owned_html};
 
 pub use {
-    bundler::bundle_assets, http_request::HTTPRequest, method::Method, request::Request,
+    bundler::bundle_assets, http_request::HttpRequest, method::Method, request::Request,
     responder::Responder, response::Response, router::Router, server::run, state::State,
 };
 pub type Result<T> = std::result::Result<T, std::io::Error>;

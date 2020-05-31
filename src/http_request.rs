@@ -3,7 +3,7 @@ use {
     std::net::TcpStream,
 };
 
-pub trait HTTPRequest: Send {
+pub trait HttpRequest: Send {
     fn method(&self) -> &str;
     fn path(&self) -> &str;
     fn full_path(&self) -> &str;

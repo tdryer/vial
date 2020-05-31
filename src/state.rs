@@ -1,5 +1,5 @@
 use {
-    crate::{HTTPRequest, Request, Result},
+    crate::{HttpRequest, Request, Result},
     std::{net::TcpStream, sync::Arc},
 };
 
@@ -24,7 +24,7 @@ impl<T: Send + Sync> std::ops::Deref for State<T> {
     }
 }
 
-impl<T: Send + Sync> HTTPRequest for State<T> {
+impl<T: Send + Sync> HttpRequest for State<T> {
     fn method(&self) -> &str {
         self.request.method()
     }

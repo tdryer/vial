@@ -1,5 +1,5 @@
 use {
-    crate::{asset, HTTPRequest, Request, Response, Result, Router, State},
+    crate::{asset, HttpRequest, Request, Response, Result, Router, State},
     std::{
         io::{self, prelude::*, BufReader, Read, Write},
         net::{SocketAddr, TcpListener, TcpStream, ToSocketAddrs},
@@ -10,7 +10,7 @@ use {
 
 const MAX_CONNECTIONS: usize = 10;
 
-pub fn run_with_state<T: ToSocketAddrs, R: 'static + HTTPRequest, S: 'static + Send + Sync>(
+pub fn run_with_state<T: ToSocketAddrs, R: 'static + HttpRequest, S: 'static + Send + Sync>(
     addr: T,
     router: Router<R>,
     state: Option<S>,
@@ -40,11 +40,11 @@ pub fn run<T: ToSocketAddrs>(addr: T, router: Router<Request>) -> Result<()> {
     run_with_state::<_, _, Request>(addr, router, None)
 }
 
-pub struct Server<R: HTTPRequest> {
+pub struct Server<R: HttpRequest> {
     router: Router<R>,
 }
 
-impl<R: HTTPRequest + 'static> Server<R> {
+impl<R: HttpRequest + 'static> Server<R> {
     pub fn new(router: Router<R>) -> Server<R> {
         Server { router }
     }
@@ -56,7 +56,7 @@ impl<R: HTTPRequest + 'static> Server<R> {
     ) -> Result<()> {
         let reader = stream.try_clone()?;
         let req = Request::from_reader(reader)?;
-        let req: Box<dyn HTTPRequest> = if state.is_some() {
+        let req: Box<dyn HttpRequest> = if state.is_some() {
             Box::new(State::new(state.unwrap(), req))
         } else {
             Box::new(req)
@@ -64,7 +64,7 @@ impl<R: HTTPRequest + 'static> Server<R> {
         self.write_response(stream, req)
     }
 
-    fn write_response(&self, mut stream: TcpStream, mut req: Box<dyn HTTPRequest>) -> Result<()> {
+    fn write_response(&self, mut stream: TcpStream, mut req: Box<dyn HttpRequest>) -> Result<()> {
         let method = req.method().to_string();
         let path = req.path().to_string();
         let mut response = self.build_response(req);
@@ -77,7 +77,7 @@ impl<R: HTTPRequest + 'static> Server<R> {
         response.write(stream)
     }
 
-    fn build_response(&self, mut req: Box<dyn HTTPRequest>) -> Response {
+    fn build_response(&self, mut req: Box<dyn HttpRequest>) -> Response {
         if asset::exists(req.path()) {
             if let Some(req_etag) = req.header("If-None-Match") {
                 if req_etag == asset::etag(req.path()).as_ref() {
