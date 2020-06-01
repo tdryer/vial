@@ -97,7 +97,7 @@ macro_rules! routes {
         pub fn vial_add_to_router<
             R: ::vial::HttpRequest<State = S>,
             S: Send + Sync + Sized
-        >(router: &mut ::vial::Router<R>) {
+        >(router: &mut ::vial::Router<R,S>) {
             $( router.insert(::vial::Method::$method, $path, |req| {
                 use ::vial::Responder;
                 let b: fn(R) -> _ = $body;

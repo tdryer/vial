@@ -16,7 +16,7 @@ pub fn run_with_state<
     S: 'static + Send + Sync + Clone,
 >(
     addr: T,
-    router: Router<R>,
+    router: Router<R, S>,
     state: S,
 ) -> Result<()> {
     let pool = ThreadPool::new(MAX_CONNECTIONS);
@@ -39,17 +39,17 @@ pub fn run_with_state<
     Ok(())
 }
 
-pub fn run<T: ToSocketAddrs>(addr: T, router: Router<Request>) -> Result<()> {
+pub fn run<T: ToSocketAddrs>(addr: T, router: Router<Request, ()>) -> Result<()> {
     run_with_state::<_, _, ()>(addr, router, ())
 }
 
 pub struct Server<R: HttpRequest<State = S>, S: Send + Sync + Clone> {
-    router: Router<R>,
+    router: Router<R, S>,
     state: Option<S>,
 }
 
 impl<R: HttpRequest<State = S> + 'static, S: Send + Sync + Clone + 'static> Server<R, S> {
-    pub fn new(router: Router<R>) -> Server<R, S> {
+    pub fn new(router: Router<R, S>) -> Server<R, S> {
         Server {
             router,
             state: None,

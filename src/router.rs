@@ -8,12 +8,12 @@ use {
 };
 
 #[derive(Default)]
-pub struct Router<R: HttpRequest> {
+pub struct Router<R: HttpRequest<State = S>, S: Send + Sync + Sized> {
     routes: HashMap<Method, Vec<(Vec<String>, fn(R) -> Response)>>,
 }
 
-impl<R: HttpRequest> Router<R> {
-    pub fn new() -> Router<R> {
+impl<R: HttpRequest<State = S>, S: Send + Sync + Sized> Router<R, S> {
+    pub fn new() -> Router<R, S> {
         Router {
             routes: HashMap::new(),
         }
@@ -112,7 +112,7 @@ mod tests {
             "Info".into()
         }
 
-        let mut router = Router::<Request>::new();
+        let mut router = Router::<Request, _>::new();
         router.insert("GET", "/about", about);
         router.insert("GET", "/:page", show);
         router.insert("GET", "/info", info);
