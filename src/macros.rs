@@ -12,7 +12,7 @@ macro_rules! run {
     ($addr:expr, $($module:ident),+) => {{
         vial::setup!();
         let mut router = ::vial::Router::new();
-        $($module::vial_add_to_router(&mut router);)+
+        $($module::vial_add_to_router::<::vial::Request, _>(&mut router);)+
         vial::run($addr, router)
     }};
 }
@@ -100,7 +100,7 @@ macro_rules! routes {
         >(router: &mut ::vial::Router<R>) {
             $( router.insert(::vial::Method::$method, $path, |req| {
                 use ::vial::Responder;
-                let b = $body;
+                let b: fn(R) -> _ = $body;
                 b(req).to_response()
             }); )*
         }

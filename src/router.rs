@@ -1,5 +1,5 @@
 use {
-    crate::{asset, HttpRequest, Method, Request, Response},
+    crate::{asset, HttpRequest, Method, Request, Responder, Response},
     percent_encoding::percent_decode,
     std::{
         collections::HashMap,
