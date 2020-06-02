@@ -1,9 +1,10 @@
-use crate::{util, Result};
+use crate::{cache, util, Result};
 use std::{
     collections::HashMap,
     io::{self, Read},
     mem,
     net::TcpStream,
+    rc::Rc,
     str,
 };
 
@@ -54,6 +55,14 @@ impl Request {
             form: HashMap::new(),
             buffer: Vec::new(),
         }
+    }
+
+    pub fn set_cache<T: 'static>(&self, value: T) {
+        cache::set(value);
+    }
+
+    pub fn cache<T: 'static>(&self) -> Rc<T> {
+        cache::get::<T>()
     }
 
     pub fn from_reader(mut reader: TcpStream) -> Result<Request> {

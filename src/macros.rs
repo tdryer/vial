@@ -38,6 +38,13 @@ macro_rules! run_with_state {
 }
 
 #[macro_export]
+macro_rules! with_cache {
+    ($cache:expr) => {
+        ::vial::cache::set($cache);
+    };
+}
+
+#[macro_export]
 macro_rules! setup {
     () => {
         #[cfg(feature="stateful")]

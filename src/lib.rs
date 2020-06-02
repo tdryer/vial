@@ -4,6 +4,7 @@
 mod macros;
 pub mod asset;
 mod bundler;
+pub mod cache;
 pub mod features;
 mod method;
 pub mod prelude;
@@ -40,3 +41,6 @@ pub static mut BUNDLED_ASSETS: Option<std::collections::HashMap<String, &'static
 
 /// Date and time this program was compiled.
 pub const BUILD_DATE: &str = env!("BUILD_DATE");
+
+use std::{any::TypeId, cell::RefCell, collections::HashMap};
+thread_local!(pub static LOCAL_CACHE: RefCell<HashMap<TypeId, usize>> = RefCell::new(HashMap::new()));
